@@ -4,24 +4,37 @@
 use std::collections::VecDeque;
 
 #[derive(Clone)]
+#[derive(PartialEq, Eq)]
+pub enum State {
+    Running,
+    WaitingInput,
+    Halted
+}
+
+#[derive(Clone)]
 pub struct Computer {
     pos: usize,
     mem: Vec<i64>,
     inputs: VecDeque<i64>,
     outputs: VecDeque<i64>,
-    halted: bool
+    state: State,
+    log: bool
 }
 
 impl Computer {
     pub fn new(buffer:&str) -> Computer {
+        Computer::new_adv(buffer, true)
+    }
+    pub fn new_adv(buffer:&str, log:bool) -> Computer {
         Computer {
             pos: 0,
             mem: buffer.split(",")
                        .map(|s| s.trim().parse::<i64>().unwrap())
                        .collect::<Vec<i64>>(),
-            halted: false,
             inputs: VecDeque::new(),
-            outputs: VecDeque::new()
+            outputs: VecDeque::new(),
+            state: State::Running,
+            log: log
         }
     }
     pub fn input(&mut self, val:i64) {
@@ -71,30 +84,40 @@ impl Computer {
             self.pos += 3;
         }
     }
-    pub fn run(&mut self) {
-        while self.step() {}
+    pub fn is_halted(&self) -> bool {
+        State::Halted == self.state
     }
-    pub fn step(&mut self) -> bool {
+    pub fn run_until_waiting(&mut self) {
+        while State::Running == self.step() {}
+    }
+    pub fn run(&mut self) {
+        while State::Halted != self.step() {}
+    }
+    pub fn step(&mut self) -> State {
         let instr = self.mem[self.pos];
         match instr % 100 {
+            // halt
             99 => {
-                // halt
-                self.halted = true;
+                self.state = State::Halted
             }
             // add
             1 => self.binop(instr, |x,y| x+y),
             // mult
             2 => self.binop(instr, |x,y| x*y),
-            3 => {
-                // input
-                let inp = self.inputs.pop_front().unwrap();
-                self.write_mode(instr, 0, inp);
-                self.pos += 2;
+            // input
+            3 => match self.inputs.pop_front() {
+                None => self.state = State::WaitingInput,
+                Some(inp) => {
+                    self.write_mode(instr, 0, inp);
+                    self.pos += 2;
+                }
             },
+            // output
             4 => {
-                // output
                 let out = self.read_mode(instr, 0);
-                println!("{}", out);
+                if self.log {
+                    println!("{}", out);
+                }
                 self.outputs.push_back(out);
                 self.pos += 2;
             },
@@ -106,8 +129,8 @@ impl Computer {
             7 => self.binop(instr, |x,y| if x<y { 1 } else { 0 }),
             // equals
             8 => self.binop(instr, |x,y| if x==y { 1 } else { 0 }),
-            _ => self.halted = true
+            _ => panic!("Invalid instruction")
         }
-        !self.halted
+        self.state.clone()
     }
 }
