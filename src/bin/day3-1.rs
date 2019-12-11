@@ -14,7 +14,7 @@ fn trace_wire(wire:Vec<&str>) -> HashSet<(i64,i64)> {
             _ => panic!("bad input")
         };
         let len = w.split_at(1).1.parse::<i64>().unwrap();
-        for i in 0..len {
+        for _i in 0..len {
             x += xd;
             y += yd;
             trace.insert((x,y));
