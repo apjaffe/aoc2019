@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 #[derive(PartialEq, Eq)]
 pub enum State {
     Running,
@@ -94,6 +94,9 @@ impl Computer {
     pub fn is_halted(&self) -> bool {
         State::Halted == self.state
     }
+    pub fn get_state(&self) -> State {
+        self.state.clone()
+    }
     pub fn run_until_waiting(&mut self) {
         while State::Running == self.step() {}
     }
@@ -115,6 +118,7 @@ impl Computer {
             3 => match self.inputs.pop_front() {
                 None => self.state = State::WaitingInput,
                 Some(inp) => {
+                    self.state = State::Running;
                     self.write_mode(instr, 0, inp);
                     self.pos += 2;
                 }
