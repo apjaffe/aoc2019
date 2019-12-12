@@ -1,6 +1,3 @@
-#[crate_id = "aoc"]
-#[crate_type = "lib"]
-
 use std::collections::VecDeque;
 
 #[derive(Clone)]
@@ -18,7 +15,8 @@ pub struct Computer {
     inputs: VecDeque<i64>,
     outputs: VecDeque<i64>,
     state: State,
-    log: bool
+    log: bool,
+    rb: i64 // relative base
 }
 
 impl Computer {
@@ -34,7 +32,8 @@ impl Computer {
             inputs: VecDeque::new(),
             outputs: VecDeque::new(),
             state: State::Running,
-            log: log
+            log: log,
+            rb: 0
         }
     }
     pub fn input(&mut self, val:i64) {
@@ -44,9 +43,15 @@ impl Computer {
         self.outputs.pop_front()
     }
     pub fn read(&self, pos: usize) -> i64 {
-        return self.mem[pos];
+        if pos >= self.mem.len() {
+          return 0;
+        }
+        self.mem[pos]
     }
     pub fn write(&mut self, pos: usize, val:i64) {
+        if pos >= self.mem.len() {
+          self.mem.resize(pos+1, 0);
+        }
         self.mem[pos] = val;
     }
     fn parse_mode(&self, instr: i64, param: u8) -> i64 {
@@ -57,6 +62,7 @@ impl Computer {
         match self.parse_mode(instr, param) {
             0 => self.read(arg as usize),
             1 => arg,
+            2 => self.read((self.rb + arg) as usize),
             _ => panic!("Invalid mode")
         }
     }
@@ -65,6 +71,7 @@ impl Computer {
         match self.parse_mode(instr, param) {
             0 => self.write(arg as usize, val),
             1 => panic!("Can't write to immediate"),
+            2 => self.write((self.rb + arg) as usize, val),
             _ => panic!("Invalid mode")
         }
     }
@@ -129,6 +136,12 @@ impl Computer {
             7 => self.binop(instr, |x,y| if x<y { 1 } else { 0 }),
             // equals
             8 => self.binop(instr, |x,y| if x==y { 1 } else { 0 }),
+            // adjust relative base
+            9 => {
+              let arg1 = self.read_mode(instr, 0);
+              self.rb += arg1;
+              self.pos += 2
+            }
             _ => panic!("Invalid instruction")
         }
         self.state.clone()

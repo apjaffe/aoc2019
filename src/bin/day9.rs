@@ -10,7 +10,6 @@ fn main() {
     handle.read_to_string(&mut buffer).unwrap();
     let mut comp = Computer::new_adv(&buffer, true);
 
-    comp.input(5);
-    let mut comp_cp = comp.clone();
+    comp.input(2);
     comp.run();
 }
