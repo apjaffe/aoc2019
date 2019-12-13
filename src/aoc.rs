@@ -100,6 +100,14 @@ impl Computer {
     pub fn run_until_waiting(&mut self) {
         while State::Running == self.step() {}
     }
+    pub fn run_until_output(&mut self) -> Option<i64> {
+        while State::Running == self.step() {
+          if self.outputs.len() > 0 {
+            return self.output()
+          }
+        }
+        return None
+    }
     pub fn run(&mut self) {
         while State::Halted != self.step() {}
     }
